@@ -1,15 +1,26 @@
 <html>
-<head>
-<title>{{.Title}}</title>
-<meta http-equiv="refresh" content="5" > 
-</head>
-<body>
-<p>
-<a href="/startServer">Start Sever</a>
-<a href="/endServer">Stop Server</a>
-<br/>
-</p>
+	<meta charset="utf08"/>
+	<head>
+		<title>{{.Title}}</title>
+		<meta http-equiv="refresh" content="5" > 
+	</head>
 
-<p>Server Status: {{.Status}}</p>
-</body>
+	{{if .Value}}
+	<body>
+	<p>
+		<a href="/startServer">Start Sever</a>
+		<a href="/endServer">Stop Server</a>
+		<form method="post" action="/logout">
+			<input type="submit" name="method" value="logout" />
+		</form>	
+
+		<br/>
+	</p>
+
+	<p>Server Status: {{.Status}}</p>
+	</body>
+	{{else}}
+	<b> Please login </b>
+	<a href="/signin">Signin</a>
+	{{end}}
 </html>
