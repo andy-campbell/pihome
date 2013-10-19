@@ -8,7 +8,6 @@ import (
 	"text/template"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"time"
         "database/sql"
 	"github.com/ghthor/gowol"
@@ -18,6 +17,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"encoding/xml"
+	"fmt"
 )
 
 type Page struct {
@@ -26,21 +27,27 @@ type Page struct {
 	Status string
 }
 
+type Settings struct {
+	XMLName xml.Name `xml:"Config"`
+	ServAddr string `xml:"ServAddr"`
+	MacAddr string `xml:"MacAddr"`
+	UserName string `xml:"UserName"`
+	Password string `xml:"Password"`
+	FullName string `xml:FullName"`
+}
+
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
 var manager = session.NewSessionManager(logger)
-
 var currentStatus = "Unknown"
-var servAddr = "Dragon:22"
-var macAddr = "00:1e:c9:2d:d6:d9"
-var bcAddr = "255.255.255.255"
+var config = Settings{}
 
+const bcAddr = "255.255.255.255"
 const dbfile = "./user.db"
 
 type User struct {
         UserId string
         Password string
         RealName string
-        Age int64
 }
 
 func sendShutDownPacket() {
@@ -82,7 +89,7 @@ func testSshSockUpOnServer() {
 			time.Sleep(30 * time.Second)
 		}
 		init = 1
-		tcpAddr, err := net.ResolveTCPAddr("tcp", servAddr)
+		tcpAddr, err := net.ResolveTCPAddr("tcp", config.ServAddr)
 		if err != nil {
 			currentStatus = "Off"
 			println("ResolveTcpAddr failed ")
@@ -99,33 +106,14 @@ func testSshSockUpOnServer() {
 		currentStatus = "Ready"
 		conn.Close()
 	}
-
 }
 
-/*
-	
-*/
 func sendMagicPacket() {
-	err := wol.SendMagicPacket(macAddr, bcAddr)
+	err := wol.SendMagicPacket(config.MacAddr, bcAddr)
 	if err != nil {
 		println("An error has occured sending magic page please check ")
 
 	}
-}
-
-
-func (p *Page) save() error {
-	filename := p.Title + ".txt"
-	return ioutil.WriteFile(filename, p.Body, 0600)
-}
-
-func loadPage(title string) (*Page, error) {
-	filename := title + ".txt"
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return &Page{Title: title, Body: body}, nil
 }
 
 func rootHandler(ctx *web.Context, session *session.Session) {
@@ -140,20 +128,9 @@ func signinHandler(ctx *web.Context, session *session.Session) {
 	})
 }
 
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
-	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
-}
-
 
 func startServerHandler(ctx *web.Context) {
-	err := wol.SendMagicPacket(macAddr, bcAddr)
+	err := wol.SendMagicPacket(config.MacAddr, bcAddr)
 	if err != nil {
 		logger.Printf("An error has occured sending magic page please check that you have entered the right info")
 	}
@@ -194,9 +171,11 @@ func dbSetup() {
                         logger.Print(e)
                         return
                 }
+		insertString := fmt.Sprintf("insert into User values('%s', '%s', '%s')",config.UserName, config.Password, config.FullName )
+		logger.Printf("insertString %s",insertString)
                 for _, s := range []string {
-                        "create table User (userid varchar(16), password varchar(20), realname varchar(20), age integer)",
-                        "insert into User values('go', 'lang', 'golang', 3)",
+                        "create table User (userid varchar(16), password varchar(20), realname varchar(20))",
+                        insertString,
                 } {
                         if _, e := db.Exec(s); e != nil {
                                 logger.Print(e)
@@ -205,6 +184,16 @@ func dbSetup() {
                 }
                 db.Close()
         }
+}
+
+func loadGlobalSettings() {
+	cfg, err := ioutil.ReadFile("config.xml")
+	if err == nil {
+		xml.Unmarshal(cfg, &config)
+	} else {
+		logger.Printf("An error has occured")
+	}
+
 }
 
 func main() {
@@ -222,12 +211,13 @@ func main() {
 
         //------------------------------------------------
         // initialize database
+	loadGlobalSettings()
         dbSetup()
 
         //------------------------------------------------
         // go to web
         web.Config.CookieSecret = "7C19QRmwf3mHZ9CPAaPQ0hsWeufKd"
-        s := "select userid, password, realname, age from User where userid = ? and password = ?"
+        s := "select userid, password, realname from User where userid = ? and password = ?"
 
         web.Get("/", func(ctx *web.Context) {
                 session := getSession(ctx, manager)
@@ -261,14 +251,13 @@ func main() {
                                 return
                         }
                         var userid, password, realname string
-                        var age int64
-                        e = r.Scan(&userid, &password, &realname, &age)
+                        e = r.Scan(&userid, &password, &realname)
                         if e != nil {
                                 logger.Print(e)
                                 return
                         }
                         // store User object to sessino
-                        session.Value = &User{userid, password, realname, age}
+                        session.Value = &User{userid, password, realname}
                         logger.Printf("User \"%s\" login", session.Value.(*User).UserId)
                 }
                 ctx.Redirect(302, "/")
@@ -300,9 +289,6 @@ func main() {
 		}
 		endServerHandler(ctx)
 	})
-//	http.HandleFunc("/", rootHandler)
-//	http.HandleFunc("/startServer", startServerHandler)
-//	http.HandleFunc("/endServer", endServerHandler)
 	go testSshSockUpOnServer()
 	web.Run (":8111")
 
