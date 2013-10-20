@@ -26,7 +26,7 @@ Add the following and change as you see fit
 
 <Config>
 	<ServAddr>Dragon:22</ServAddr>
-	<MacAddr>00:1e:c9:2d:d6:d9</MacAddr>
+	<MacAddr>00:11:22:33:44:55</MacAddr>
 	<UserName>andrew</UserName>
 	<Password>*******</Password>
 	<FullName>Andrew Campbell</FullName>
