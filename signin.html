@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html>
-	<meta charset="utf-8"/>
-	<title>Sign in</title>
-	<body>
+	<head>
+		<meta charset="utf-8"/>
+		<title>Sign in</title>
+		<link href="mystyle.css" rel="stylesheet" type="text/css" media="screen, projection"/>
+	</head>
+	<div id="wrapper">
+		<div id="body">
 		{{if .Value}}
-		Hi {{.Value.RealName}}.
-		<form method="post" action="/logout">
-			<input type="submit" name="method" value="logout" />
-		</form>
+			Hi {{.Value.RealName}}.
+			<form method="post" action="/logout">
+				<input type="submit" name="method" value="logout" />
+			</form>
 		{{else}}
 		{{if .Msg}}<b>{{.Msg}}</b>{{end}}
-		<form method="post" action="/login">
-			<label for="name">Name:</label><br />
-			<input type="text" id="userid" name="userid" value="" /><br />
-			<label for="password">Password:</label><br />
-			<input type="password" id="password" name="password" value="" /><br />
-			<input type="submit" name="method" value="login" />
-		</form>
+			<form id="loginForm" method="post" action="/login">
+				<label for="name">Name:</label><br />
+				<input type="text" id="userid" name="userid" value="" /><br />
+				<label for="password">Password:</label><br />
+				<input type="password" id="password" name="password" value="" /><br />
+				<input type="submit" name="method" value="login" />
+			</form>
 		{{end}}
-	</body>
+		</div>
+	</div>
+	<footer id="footer">
+		<p>Created by Andrew Campbell</p>
+	</footer>
 </html>

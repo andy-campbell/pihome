@@ -65,12 +65,10 @@ func sendShutDownPacket() {
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		currentStatus = "Off"
 		println("Dial failed:", err.Error())
 		return
 	}
 
-	currentStatus = "Ready"
 	conn.Close()
 
 }
@@ -91,19 +89,19 @@ func testSshSockUpOnServer() {
 		init = 1
 		tcpAddr, err := net.ResolveTCPAddr("tcp", config.ServAddr)
 		if err != nil {
-			currentStatus = "Off"
+			currentStatus = "Offline"
 			println("ResolveTcpAddr failed ")
 			continue
 		}
 
 		conn, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
-			currentStatus = "Off"
+			currentStatus = "Offline"
 			println("Dial failed:", err.Error())
 			continue
 		}
 
-		currentStatus = "Ready"
+		currentStatus = "Online"
 		conn.Close()
 	}
 }
@@ -117,8 +115,13 @@ func sendMagicPacket() {
 }
 
 func rootHandler(ctx *web.Context, session *session.Session) {
+	userString := "N/A"
+	if session.Value != nil {
+		userString = session.Value.(*User).RealName
+	}
+
 	templates.ExecuteTemplate(ctx, "index.html", map[string]interface{} {
-		"Value" : session.Value, "Msg": "", "Title" : "Home", "Status" : currentStatus,
+		"Value" : session.Value, "Msg": "", "Title" : "Home", "Status" : currentStatus, "User" : userString,
 	})
 }
 

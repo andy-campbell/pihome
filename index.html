@@ -6,19 +6,30 @@
 		<meta http-equiv="refresh" content="5" >
 		<link href="mystyle.css" rel="stylesheet" type="text/css" media="screen, projection"/>
 	</head>
+	<header id="header">
+		<p><b> Andrew's Home Server </b></p>
+		{{if .Value}}
+		<div id="userStatus">
+			<span>
+				<form method="post" action="/logout">
+					<span id="currentuserheader">Signed in as {{.User}}</span>
+
+					<span id="logoutSpan"><input type="submit" name="method" value="logout" class="logout"/></span>
+				</form>	
+			</span>
+		</div>
+		{{end}}
+	</header> <!-- header -->
 	<div id="wrapper">
-		<div id="header">
-		</div> <!-- header -->
 
 		<div id="body">
 	{{if .Value}}
 			<a href="/startServer">Start Sever</a>
 			<a href="/endServer">Stop Server</a>
-			<form method="post" action="/logout">
-				<input type="submit" name="method" value="logout" />
-			</form>	
+
 			<br/>
 			<p>Server Status: {{.Status}}</p>
+			<a href="http://dragon/mediawiki">Wiki</a>
 	{{else}}
 		<div id="signinInner">
 			<a href="/signin" class="signin">Signin</a>
