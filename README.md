@@ -24,6 +24,7 @@ To add your own configuration do the following:
 - Open config.xml with editor of choice.
 Add the following and change as you see fit
 
+```
 <Config>
 	<ServAddr>Dragon:22</ServAddr>
 	<MacAddr>00:11:22:33:44:55</MacAddr>
@@ -32,6 +33,7 @@ Add the following and change as you see fit
 	<FullName>Andrew Campbell</FullName>
 </Config>
 
+```
 To build run the following command:
 - go build home.go
 
