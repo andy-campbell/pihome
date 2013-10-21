@@ -19,6 +19,8 @@ import (
 	"strings"
 	"encoding/xml"
 	"fmt"
+	"net/http/httputil"
+	"net/url"
 )
 
 type Page struct {
@@ -292,6 +294,15 @@ func main() {
 		}
 		endServerHandler(ctx)
 	})
+
+	servUrl, err := url.Parse("http://dragon/mediawiki")
+	if err != nil {
+		return
+	}
+
+	reverseProxy := httputil.NewSingleHostReverseProxy(servUrl)
+	web.Get("/mediawiki",  reverseProxy)
+
 	go testSshSockUpOnServer()
 	web.Run (":8111")
 
