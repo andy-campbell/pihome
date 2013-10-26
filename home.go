@@ -20,7 +20,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http/httputil"
-	"net/url"
+	"net/http"
+	"bufio"
+	"io"
 )
 
 type Page struct {
@@ -32,6 +34,7 @@ type Page struct {
 type Settings struct {
 	XMLName xml.Name `xml:"Config"`
 	ServAddr string `xml:"ServAddr"`
+	WikiAddr string `xml:"WikiAddr"`
 	MacAddr string `xml:"MacAddr"`
 	UserName string `xml:"UserName"`
 	Password string `xml:"Password"`
@@ -201,6 +204,39 @@ func loadGlobalSettings() {
 
 }
 
+type annoying struct {
+	r *http.Response
+}
+
+
+func proxyToMainServer(ctx *web.Context, val string) {
+
+        ctx.Request.Write(os.Stdout)
+        c, err := net.Dial("tcp", config.WikiAddr)
+        if err != nil {
+            fmt.Printf("Error: %s", err)
+            return
+        }
+        client := httputil.NewClientConn(c, nil)
+        defer client.Close()
+        defer c.Close()
+
+        remoteServer := bufio.NewReader(c)
+        client.Write(ctx.Request)
+        response,err := http.ReadResponse(remoteServer, ctx.Request)
+        if err != nil {
+            fmt.Printf("Error: %s\n", err)
+	    return
+        }
+        for k,v := range response.Header {
+            ctx.Header().Set(k,v[0])
+        }
+        ctx.WriteHeader(response.StatusCode)
+        io.Copy(ctx,response.Body)
+        response.Body.Close()
+        response.Write(ctx)
+}
+
 func main() {
 
         //------------------------------------------------
@@ -295,13 +331,7 @@ func main() {
 		endServerHandler(ctx)
 	})
 
-	servUrl, err := url.Parse("http://dragon/mediawiki")
-	if err != nil {
-		return
-	}
-
-	reverseProxy := httputil.NewSingleHostReverseProxy(servUrl)
-	web.Get("/mediawiki",  reverseProxy)
+	web.Proxy("/mediawiki(.*)", proxyToMainServer)
 
 	go testSshSockUpOnServer()
 	web.Run (":8111")
